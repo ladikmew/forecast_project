@@ -18,7 +18,7 @@ def check_bad_weather(temp, wind_speed, precip_prob, hmidity):
     :hmidity: влажность в процентах
     :return: вердикт по погоде на улице
     """
-    if temp and wind_speed and precip_prob:
+    if temp is not None and wind_speed is not None and precip_prob is not None and hmidity is not None:
         if temp < criteria["low_temp"]:
             return "Погода холоднее, чем комфортная"
         if temp > criteria["high_temp"]:
@@ -28,7 +28,7 @@ def check_bad_weather(temp, wind_speed, precip_prob, hmidity):
         if precip_prob > criteria["max_precip_prob"]:
             return "Высокая вероятность осадков"
         if hmidity > criteria["hmidity"]:
-            return "Высокая влажность"
+            return "Высокая влажность(укаладку делать не стоит)"
         return "Погода комфортная"
     else:
         return "Некорректные данные по погоде"

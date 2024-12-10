@@ -1,72 +1,70 @@
-from flask import Flask, request, jsonify
-import requests
+from flask import Flask, request, json
+from getting_weather import get_weather_data
+from weather_model import check_bad_weather
 
 app = Flask(__name__)
+#GET /weather?start_lat=34.0522&start_lon=-118.2437&end_lat=40.7128&end_lon=-74.0060 из лос-анджелеса в нью йорк
 
-API_KEY = 'liST7ItQKke0mlj7TYArcsvOe7Krk5jD'
-
-# тестовая координата для проверки
-test = [
-    {'lat': 34.0522, 'lon': -118.2437} # Лос-Анджелес
-]
-
-# Определяем маршрут для обработки GET-запроса на /weather
 @app.route('/weather', methods=['GET'])
 def get_weather():
-    # Получаем координаты
-    latitude = request.args.get('lat')
-    longitude = request.args.get('lon')
+    """
+    Обработчик маршрута для получения данных о погоде.
+    Принимает параметры start_lat, start_lon, end_lat, end_lon в запросе.
+    """
+    # Получаем начальные и конечные координаты из запроса
+    start_lat = request.args.get('start_lat')
+    start_lon = request.args.get('start_lon')
+    end_lat = request.args.get('end_lat')
+    end_lon = request.args.get('end_lon')
 
-    # Если координаты не переданы в запросе, то используюм тестовые координаты
-    if not latitude or not longitude:
-        latitude, longitude = test[0]['lat'], test[0]['lon']
-        print(f"Используем тестовые координаты: {latitude}, {longitude}")
+    # Проверяем, что все координаты переданы
+    if not (start_lat and start_lon and end_lat and end_lon):
+        response = {"error": "Укажите, пожалуйста начальные и конечные координаты вашего маршрута :)"}
+        return json.dumps(response, ensure_ascii=False), 400, {'Content-Type': 'application/json; charset=utf-8'}
 
-    location_url = 'http://dataservice.accuweather.com/locations/v1/cities/geoposition/search'
-    params = {
-        'apikey': API_KEY,
-        'q': f'{latitude},{longitude}'
+    # Получаем данные о погоде для начальной точки
+    start_weather = get_weather_data(start_lat, start_lon)
+    if "error" in start_weather:
+        response = {"error": f"Ошибка для начальной точки: {start_weather['error']}"}
+        return json.dumps(response, ensure_ascii=False), 400, {'Content-Type': 'application/json; charset=utf-8'}
+
+    # Получаем данные о погоде для конечной точки
+    end_weather = get_weather_data(end_lat, end_lon)
+    if "error" in end_weather:
+        response = {"error": f"Ошибка для конечной точки: {end_weather['error']}"}
+        return json.dumps(response, ensure_ascii=False), 400, {'Content-Type': 'application/json; charset=utf-8'}
+
+    # Оценка погодных условий для начальной точки
+    start_weather_status = check_bad_weather(
+        start_weather["Temperature (C)"],
+        start_weather["Wind Speed (km/h)"],
+        start_weather["Precipitation Probability (%)"],
+        start_weather["Humidity (%)"]
+    )
+
+    # Оценка погодных условий для конечной точки
+    end_weather_status = check_bad_weather(
+        end_weather["Temperature (C)"],
+        end_weather["Wind Speed (km/h)"],
+        end_weather["Precipitation Probability (%)"],
+        end_weather["Humidity (%)"]
+    )
+
+    # Подготовка ответа с результатами для обеих точек
+    result = {
+        "start_point": {
+            "coordinates": {"lat": start_lat, "lon": start_lon},
+            "weather": start_weather,
+            "status": start_weather_status
+        },
+        "end_point": {
+            "coordinates": {"lat": end_lat, "lon": end_lon},
+            "weather": end_weather,
+            "status": end_weather_status
+        }
     }
 
-    # Инфа о местоположении
-    response = requests.get(location_url, params=params)
-
-    # Если всё хорошо, то продолжаем работу
-    if response.status_code == 200:
-        location_data = response.json()  # Преобразуем ответ в формат джейсон
-        location_key = location_data.get('Key')
-
-        # получаем данные о текущей погоде по locationKey
-        forecast_url = f'http://dataservice.accuweather.com/currentconditions/v1/{location_key}'
-        forecast_params = {'apikey': API_KEY,
-                           'details': True}
-
-        # Лутаем данные о погоде
-        forecast_response = requests.get(forecast_url, params=forecast_params)
-
-        if forecast_response.status_code == 200:
-            forecast_data = forecast_response.json()[0]
-
-            # Извлекаем ключевые параметры из данных о погоде
-            temperature = forecast_data['Temperature']['Metric']['Value']
-            humidity = forecast_data['RelativeHumidity']
-            wind_speed = forecast_data['Wind']['Speed']['Metric']['Value']
-            precipitation_probability = forecast_data.get('PrecipitationProbability',0)
-
-            #Ответ с итоговыми данными в формате джэйсон
-            weather_info = {
-                "Temperature (C)": temperature,
-                "Humidity (%)": humidity,
-                "Wind Speed (km/h)": wind_speed,
-                "Precipitation Probability (%)": precipitation_probability
-            }
-
-            # Возвращаем данные в формате JSON
-            return jsonify(weather_info)
-        else:
-            return jsonify({"error": "Ошибка получения прогноза"}), forecast_response.status_code
-    else:
-        return jsonify({"error": "Ошибка получения локации"}), response.status_code
+    return json.dumps(result, ensure_ascii=False), 200, {'Content-Type': 'application/json; charset=utf-8'}
 
 if __name__ == "__main__":
     app.run(debug=True)
