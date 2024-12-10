@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Оценка погодных условий</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            width: 50%;
+            margin: auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            margin-top: 50px;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+        }
+        label {
+            font-size: 1.1em;
+            margin-bottom: 5px;
+            color: #333;
+        }
+        input[type="text"] {
+            padding: 10px;
+            font-size: 1em;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            margin-bottom: 15px;
+        }
+        input[type="submit"] {
+            padding: 10px 20px;
+            font-size: 1em;
+            background-color: #09519e;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        input[type="submit"]:hover {
+            background-color: #0c6acf;
+        }
+        .error {
+            color: red;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .coordinates {
+            font-size: 0.9em;
+            color: #555;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Введите координаты маршрута</h1>
+
+        {% if error %}
+        <div class="error">{{ error }}</div>
+        {% endif %}
+
+        <form method="POST" action="/weather">
+            <div class="form-group">
+                <label for="start_lat">Начальная точка(Широта):</label>
+                <input type="text" id="start_lat" name="start_lat">
+            </div>
+            <div class="form-group">
+                <label for="start_lon">Начальная точка(Долгота):</label>
+                <input type="text" id="start_lon" name="start_lon" >
+            </div>
+            <div class="form-group">
+                <label for="end_lat">Конечная точка(Широта):</label>
+                <input type="text" id="end_lat" name="end_lat" >
+            </div>
+            <div class="form-group">
+                <label for="end_lon">Конечная точка(Долгота):</label>
+                <input type="text" id="end_lon" name="end_lon" >
+            </div>
+            <input type="submit" value="Получить данные о погоде">
+        </form>
+    </div>
+
+</body>
+</html>

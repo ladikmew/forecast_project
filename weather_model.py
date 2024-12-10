@@ -28,7 +28,7 @@ def check_bad_weather(temp, wind_speed, precip_prob, hmidity):
         if precip_prob > criteria["max_precip_prob"]:
             return "Высокая вероятность осадков"
         if hmidity > criteria["hmidity"]:
-            return "Высокая влажность(укаладку делать не стоит)"
+            return "Высокая влажность"
         return "Погода комфортная"
     else:
         return "Некорректные данные по погоде"

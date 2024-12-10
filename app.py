@@ -1,38 +1,38 @@
-from flask import Flask, request, json
+from flask import Flask, request, render_template, jsonify
 from getting_weather import get_weather_data
 from weather_model import check_bad_weather
 
 app = Flask(__name__)
 #GET /weather?start_lat=34.0522&start_lon=-118.2437&end_lat=40.7128&end_lon=-74.0060 из лос-анджелеса в нью йорк
 
-@app.route('/weather', methods=['GET'])
-def get_weather():
-    """
-    Обработчик маршрута для получения данных о погоде.
-    Принимает параметры start_lat, start_lon, end_lat, end_lon в запросе.
-    """
-    # Получаем начальные и конечные координаты из запроса
-    start_lat = request.args.get('start_lat')
-    start_lon = request.args.get('start_lon')
-    end_lat = request.args.get('end_lat')
-    end_lon = request.args.get('end_lon')
 
-    # Проверяем, что все координаты переданы
+# Обработчик GET-запроса для отображения html версии
+@app.route('/', methods=['GET'])
+def form():
+    return render_template('html.html')
+
+# Обработчик POST-запроса для получения данных о погоде
+@app.route('/weather', methods=['POST'])
+def get_weather():
+    # Получаем координаты из формы
+    start_lat = request.form.get('start_lat')
+    start_lon = request.form.get('start_lon')
+    end_lat = request.form.get('end_lat')
+    end_lon = request.form.get('end_lon')
+
+    # Проверка на не заполненные ячейки
     if not (start_lat and start_lon and end_lat and end_lon):
-        response = {"error": "Укажите, пожалуйста начальные и конечные координаты вашего маршрута :)"}
-        return json.dumps(response, ensure_ascii=False), 400, {'Content-Type': 'application/json; charset=utf-8'}
+        return render_template('html.html', error="Пожалуйста, заполните все поля.")
 
     # Получаем данные о погоде для начальной точки
     start_weather = get_weather_data(start_lat, start_lon)
     if "error" in start_weather:
-        response = {"error": f"Ошибка для начальной точки: {start_weather['error']}"}
-        return json.dumps(response, ensure_ascii=False), 400, {'Content-Type': 'application/json; charset=utf-8'}
+        return render_template('html.html', error=f"Ошибка для начальной точки")
 
     # Получаем данные о погоде для конечной точки
     end_weather = get_weather_data(end_lat, end_lon)
     if "error" in end_weather:
-        response = {"error": f"Ошибка для конечной точки: {end_weather['error']}"}
-        return json.dumps(response, ensure_ascii=False), 400, {'Content-Type': 'application/json; charset=utf-8'}
+        return render_template('html.html', error=f"Ошибка для конечной точки")
 
     # Оценка погодных условий для начальной точки
     start_weather_status = check_bad_weather(
@@ -50,7 +50,6 @@ def get_weather():
         end_weather["Humidity (%)"]
     )
 
-    # Подготовка ответа с результатами для обеих точек
     result = {
         "start_point": {
             "coordinates": {"lat": start_lat, "lon": start_lon},
@@ -64,7 +63,7 @@ def get_weather():
         }
     }
 
-    return json.dumps(result, ensure_ascii=False), 200, {'Content-Type': 'application/json; charset=utf-8'}
+    return render_template('weather.html', result=result)
 
 if __name__ == "__main__":
     app.run(debug=True)

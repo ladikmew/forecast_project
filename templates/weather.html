@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Результаты оценки погоды</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            width: 80%;
+            margin: auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        .result {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f0f8ff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .result h2 {
+            color: #333;
+        }
+        .status-good {
+            color: green;
+            font-weight: bold;
+        }
+        .status-bad {
+            color: red;
+            font-weight: bold;
+        }
+        .coordinates {
+            font-style: italic;
+        }
+        .weather-data {
+            margin-top: 10px;
+        }
+        .error {
+            color: red;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Результаты оценки погодных условий</h1>
+
+        <div class="result">
+            <h2>Начальная точка:</h2>
+            <p><strong>Координаты:</strong> {{ result.start_point.coordinates.lat }}, {{ result.start_point.coordinates.lon }}</p>
+            <div class="weather-data">
+                <p><strong>Температура:</strong> {{ result.start_point.weather["Temperature (C)"] }} °C</p>
+                <p><strong>Влажность:</strong> {{ result.start_point.weather["Humidity (%)"] }} %</p>
+                <p><strong>Скорость ветра:</strong> {{ result.start_point.weather["Wind Speed (km/h)"] }} км/ч</p>
+                <p><strong>Вероятность осадков:</strong> {{ result.start_point.weather["Precipitation Probability (%)"] }} %</p>
+            </div>
+            <p class="status-{{ 'good' if result.start_point.status == 'Погода супер: идеальные условия!' else 'bad' }}">
+                {{ result.start_point.status }}
+            </p>
+        </div>
+
+        <div class="result">
+            <h2>Конечная точка:</h2>
+            <p><strong>Координаты:</strong> {{ result.end_point.coordinates.lat }}, {{ result.end_point.coordinates.lon }}</p>
+            <div class="weather-data">
+                <p><strong>Температура:</strong> {{ result.end_point.weather["Temperature (C)"] }} °C</p>
+                <p><strong>Влажность:</strong> {{ result.end_point.weather["Humidity (%)"] }} %</p>
+                <p><strong>Скорость ветра:</strong> {{ result.end_point.weather["Wind Speed (km/h)"] }} км/ч</p>
+                <p><strong>Вероятность осадков:</strong> {{ result.end_point.weather["Precipitation Probability (%)"] }} %</p>
+            </div>
+            <p class="status-{{ 'good' if result.end_point.status == 'Погода супер: идеальные условия!' else 'bad' }}">
+                {{ result.end_point.status }}
+            </p>
+        </div>
+
+        <a href="/">Вернуться к форме</a>
+    </div>
+
+</body>
+</html>
