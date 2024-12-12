@@ -1,6 +1,8 @@
 from flask import Flask, request, render_template, jsonify
 from getting_weather import get_weather_data
 from weather_model import check_bad_weather
+import socket
+import requests
 
 app = Flask(__name__)
 
@@ -14,6 +16,15 @@ def form():
     return render_template('html.html')
 
 
+# Функция для проверки подключения к сети
+def is_connected():
+    try:
+        # Пытаемся подключиться к одному из популярных сайтов
+        socket.create_connection(("www.google.com", 80), timeout=5)
+        return True
+    except OSError:
+        return False
+    
 # Обработчик POST-запроса для получения данных о погоде
 @app.route('/weather', methods=['POST'])
 def get_weather():
@@ -28,19 +39,30 @@ def get_weather():
         if not (start_lat and start_lon and end_lat and end_lon):
             return render_template('error.html', message="Пожалуйста, заполните все поля :)")
 
+        # Проверка корректности координат
         if not validate_coordinates(start_lat, start_lon, end_lat, end_lon):
             return render_template('error.html',
                                    message="Проверьте корректность координат и повторите попытку")
 
-        # Получаем данные о погоде для начальной точки
-        start_weather = get_weather_data(start_lat, start_lon)
+        if not is_connected():
+            return render_template('error.html', message="Ошибка подключения: проверьте ваше интернет-соединение.")
+
+        # Проверка на работоспособность API и подключение к сети
+        try:
+            start_weather = get_weather_data(start_lat, start_lon)
+            end_weather = get_weather_data(end_lat, end_lon)
+        except requests.ConnectionError:
+            return render_template('error.html', message="Ошибка подключения: проверьте ваше интернет-соединение.")
+        except requests.RequestException:
+            return render_template('error.html', message="Ошибка подключения к API :(. Попробуйте позже.")
+
+        # Проверяем на ошибки при получении погоды для начальной точки
         if "error" in start_weather:
             print(f"Ошибка при получении погоды для начальной точки: {start_weather['error']}")
             return render_template('error.html',
                                    message=f"Ошибка при получении данных о погоде для начальной точки, попробуйте ввести корректные координаты ещё раз")
 
-        # Получаем данные о погоде для конечной точки
-        end_weather = get_weather_data(end_lat, end_lon)
+        # Проверяем на ошибки при получении погоды для конечной точки
         if "error" in end_weather:
             print(f"Ошибка при получении погоды для конечной точки: {end_weather['error']}")
             return render_template('error.html',
@@ -77,15 +99,12 @@ def get_weather():
         print("Данные о погоде получены, это победа.")
         return render_template('weather.html', result=result)
 
-
-    except ValueError as ve:
-        return render_template('error.html', message=f"Ошибка данных: {ve}")
-
     except Exception as e:
         return render_template(
             'error.html',
             message="Произошла неожиданная ошибка, проверьте подключение к сети и повторите попытку"
         )
+
 
 def validate_coordinates(start_lat, start_lon, end_lat, end_lon):
     """Проверка корректности координат."""
